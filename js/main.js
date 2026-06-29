@@ -43,19 +43,28 @@ document.addEventListener('DOMContentLoaded', () => {
       }];
     }
 
-    const beforeThumbs = Array.from(panel.querySelectorAll('.ba-strip-row:first-of-type .ba-thumb'));
-    const afterThumbs  = Array.from(panel.querySelectorAll('.ba-strip-row:last-of-type .ba-thumb'));
-    const heroWraps    = Array.from(panel.querySelectorAll('.ba-image-wrap'));
+    const stripRows   = Array.from(panel.querySelectorAll('.ba-strip-row'));
+    const beforeRow   = stripRows[0];
+    const afterRow    = stripRows[1];
 
+    if (!beforeRow || !afterRow) {
+      return [{
+        before: clickedEl.dataset.lightbox,
+        after: null,
+        caption: clickedEl.dataset.caption || ''
+      }];
+    }
+
+    const beforeThumbs = Array.from(beforeRow.querySelectorAll('.ba-thumb'));
+    const afterThumbs  = Array.from(afterRow.querySelectorAll('.ba-thumb'));
     const groups = [];
 
-    // Thumbnail pairs — indexed 1:1 by position
     const count = Math.min(beforeThumbs.length, afterThumbs.length);
     for (let i = 0; i < count; i++) {
       groups.push({
-        before:  beforeThumbs[i].dataset.lightbox,
-        after:   afterThumbs[i].dataset.lightbox,
-        caption: `Image ${i + 1}`,
+        before:   beforeThumbs[i].dataset.lightbox,
+        after:    afterThumbs[i].dataset.lightbox,
+        caption:  `Image ${i + 1}`,
         beforeEl: beforeThumbs[i],
         afterEl:  afterThumbs[i]
       });
