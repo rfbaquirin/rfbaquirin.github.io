@@ -31,12 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let sbsMode        = false;
 
   // Build paired groups from the DOM
-  // Each .cs-work-panel pairs its before-row and after-row thumbs
   function buildGroups(clickedEl) {
-    const panel = clickedEl.closest('.cs-work-panel, .gallery-grid');
+    const panel = clickedEl.closest('.cs-work-panel');
 
-    // Gallery items — no compare pairs
-    if (!panel || panel.classList.contains('gallery-grid')) {
+    // Gallery or no panel — single image, no compare
+    if (!panel) {
       return [{
         before: clickedEl.dataset.lightbox,
         after: null,
@@ -44,31 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }];
     }
 
-    const beforeRow = panel.querySelector('.ba-strip-row:first-of-type .ba-thumb');
-    const beforeThumbs = panel.querySelectorAll('.ba-strip-row:first-of-type .ba-thumb');
-    const afterThumbs  = panel.querySelectorAll('.ba-strip-row:last-of-type .ba-thumb');
+    const beforeThumbs = Array.from(panel.querySelectorAll('.ba-strip-row:first-of-type .ba-thumb'));
+    const afterThumbs  = Array.from(panel.querySelectorAll('.ba-strip-row:last-of-type .ba-thumb'));
+    const heroWraps    = Array.from(panel.querySelectorAll('.ba-image-wrap'));
 
-    // Also include hero images as pair index 0
-    const heroWrap = panel.querySelectorAll('.ba-image-wrap');
     const groups = [];
 
-    // Hero pair first if exists
-    if (heroWrap.length >= 2) {
-      groups.push({
-        before:  heroWrap[0].dataset.lightbox,
-        after:   heroWrap[1].dataset.lightbox,
-        caption: heroWrap[0].dataset.caption || '',
-        isHero:  true
-      });
-    }
-
-    // Thumbnail pairs
+    // Thumbnail pairs — indexed 1:1 by position
     const count = Math.min(beforeThumbs.length, afterThumbs.length);
     for (let i = 0; i < count; i++) {
       groups.push({
         before:  beforeThumbs[i].dataset.lightbox,
         after:   afterThumbs[i].dataset.lightbox,
-        caption: beforeThumbs[i].dataset.caption || `Image ${i + 1}`
+        caption: `Image ${i + 1}`,
+        beforeEl: beforeThumbs[i],
+        afterEl:  afterThumbs[i]
       });
     }
 
@@ -76,6 +65,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function findClickedIndex(clickedEl, groups) {
+    // Match by element reference first (most reliable)
+    for (let i = 0; i < groups.length; i++) {
+      if (groups[i].beforeEl === clickedEl || groups[i].afterEl === clickedEl) {
+        return i;
+      }
+    }
+    // Fallback: match by src
     const src = clickedEl.dataset.lightbox;
     for (let i = 0; i < groups.length; i++) {
       if (groups[i].before === src || groups[i].after === src) {
@@ -83,6 +79,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     return 0;
+  }
+
+  function isAfterClick(clickedEl, groups, index) {
+    if (index >= 0 && index < groups.length) {
+      return groups[index].afterEl === clickedEl;
+    }
+    return false;
   }
 
   function renderSingle() {
@@ -131,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openLightbox(el) {
     currentGroup  = buildGroups(el);
     currentIndex  = findClickedIndex(el, currentGroup);
-    showingAfter  = el.dataset.lightbox === currentGroup[currentIndex]?.after;
+    showingAfter  = isAfterClick(el, currentGroup, currentIndex);
     sbsMode       = false;
 
     lightbox.classList.add('active');
@@ -195,7 +198,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach to all clickable elements
   document.querySelectorAll('[data-lightbox]').forEach(el => {
     el.style.cursor = 'pointer';
-    el.addEventListener('click', () => openLightbox(el));
+    el.addEventListener('click', () => {
+      // Hero image wraps — open as standalone pair
+      if (el.classList.contains('ba-image-wrap')) {
+        const panel = el.closest('.cs-work-panel');
+        const heroWraps = panel ? Array.from(panel.querySelectorAll('.ba-image-wrap')) : [];
+        if (heroWraps.length >= 2) {
+          const isAfter = heroWraps.indexOf(el) === 1;
+          currentGroup = [{
+            before:   heroWraps[0].dataset.lightbox,
+            after:    heroWraps[1].dataset.lightbox,
+            caption:  'Hero comparison',
+            beforeEl: heroWraps[0],
+            afterEl:  heroWraps[1]
+          }];
+          currentIndex = 0;
+          showingAfter = isAfter;
+          sbsMode = false;
+          lightbox.classList.add('active');
+          document.body.style.overflow = 'hidden';
+          renderSingle();
+          return;
+        }
+      }
+      openLightbox(el);
+    });
   });
 
 
