@@ -485,6 +485,24 @@ nav {
 }
 .ba-annotation strong { color: var(--aqua); font-weight: 500; }
 
+/* Caption row — spans full width below hero pair, above thumbnail strip */
+.ba-caption-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 16px 0 24px;
+}
+.ba-caption-before,
+.ba-caption-after {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  padding-left: 12px;
+}
+.ba-caption-before { border-left: 2px solid var(--border); }
+.ba-caption-after  { border-left: 2px solid var(--aqua-dim); }
+.ba-caption-after strong { color: var(--aqua); font-weight: 500; }
+
 /* Thumbnail Strip */
 .ba-strip-label {
   font-size: 11px;
